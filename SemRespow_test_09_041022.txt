@@ -1,0 +1,1491 @@
+##########In this file, we write the HtpyRecord in a different way so that it takes less memory##########
+##########Change the Semidirect product (from p=7 to p=2)
+##########Combine 3 file: ResolutionZ2, ResolutionZ4 and SemRespow_test_07
+
+############Please change the power1, power2 and length here##############
+positivepower:=2;
+power1:=3; power2:= positivepower*1; length:=3;
+###############This part is of file ResolutionZ2########################
+##########This file is for building the resolution of Z over ZZ^2#########
+ResolutionZ2:=function(Ns)
+
+local 	F, FrAb, gens, Coeff, fn, g1, g2, Elts, posfn,
+Dimensionss, Boundaryss, Homotopyss,posg1, posg2;
+
+F:=FreeGroup(1);
+FrAb:=CoxeterDiagramFpArtinGroup(List([1..2],i->[i]));
+FrAb:=FrAb[1]/FrAb[2];
+gens:=GeneratorsOfGroup(FrAb);
+g1:=gens[1]; g2:=gens[2];
+
+
+
+####################Coeff function for element in G #######################
+Coeff:=function(x)
+	local C, CL, i;
+	C:=ExtRepOfObj(x);
+	CL:=[0,0];
+	i:=1;
+	while i < Length(C) do
+		CL[C[i]]:=CL[C[i]]+C[i+1];
+		i:=i+2;
+	od;
+	return CL;
+end;
+
+########################################Defining Elts#####################
+fn:=function(n)
+	local N, m,p,x,y,C; # C store Coefficients
+	if n<0 then
+		if (RootInt(-n))^2 = -n then
+			N:= RootInt(-n);
+		else 
+			N:= RootInt(-n) +1;
+		fi;
+		m:=AbsInt(n)-(N-1)^2;
+		y:=-N+1+m-1;
+		x:=AbsInt(y)-N;
+	fi;
+
+	if n>=0 then
+		p:=RootInt(n+1);
+		if p^2=(n+1) then
+			N:=p-1;
+		else N:= p;
+		fi;
+		m:=n-(N-1)*(N+1);
+		y:=-N+m-1;
+		x:=N-AbsInt(y);
+	fi;
+	return g1^x*g2^y;
+	end;
+Elts:=LazyList(fn);
+
+posfn:=function(L)
+	local g, CL;
+	CL:=Coeff(L);
+	g:=function(x,y)
+		local m, n, N;
+		N:=AbsInt(x) + AbsInt(y);
+		if x>=0 then
+			m:=y+1+N;
+			n:=m+(N-1)*(N+1);
+		fi;
+		if x<0 then
+			m:=y+N;
+			n:=-(m+(N-1)^2);
+		fi;
+		return n;
+	end;
+	return g(CL[1],CL[2]);
+end;
+Elts!.posfun:=posfn;
+
+############ Definition of dimension function#############################
+Dimensionss:=function(n)
+	if n=0 then return 1; fi;
+	if n = 1 then return 2; fi;
+	if n = 2 then return 1; fi;
+	if n<0 or n>2 then return 0; fi;
+end;
+
+########### Definition of boundary function################################
+posg1:=Elts!.posfun(g1); posg2:=Elts!.posfun(g2);
+
+Boundaryss:=function(n,k)
+	if n = 1 and k=1 then return [[1,posg1],[-1,0]]; fi;
+	if n = 1 and k=-1 then return [[-1,posg1],[1,0]]; fi;
+	if n = 1 and k =2 then return [[1,posg2], [-1,0]];fi;
+	if n = 1 and k =-2 then return [[-1,posg2], [1,0]];fi;
+
+	if n =2 and k =1 then return [[2,posg1], [-2,0], [1,0], [-1,posg2]];fi;
+	if n =2 and k =-1 then return [[-2,posg1], [2,0], [-1,0], [1,posg2]];fi;
+
+	if n<= 0 or n>2 then return []; fi;
+end;
+
+########## Definition of homotopy function #################################
+Homotopyss:=function(s,x)       ### x=[i,g] means Elts[g]*e^s_i; dimension s #####
+	local L, a, g, m, n, p, q, m1, n1, p1, q1, h, i, j, k, l, PositionElts;
+	PositionElts:=Elts!.posfun;
+	a:=Elts[x[2]];
+	L:=Coeff(a);
+	m:=L[1]; n:=L[2];
+	m1:=(m-AbsInt(m))/2; n1:=(n-AbsInt(n))/2;
+	h:=[];
+	if s=1 then
+		if x[1] in [1,-1] then h:=[]; fi;
+		if x[1]=2 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*1,PositionElts(g1^i*g2^n)]);
+			od;
+		fi;
+		if x[1]=-2 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-1),PositionElts(g1^i*g2^n)]);
+			od;
+		fi;
+	fi;
+	if s=0 then
+		if x[1]=1 then
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*1,PositionElts(g1^i*g2^n)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*2,PositionElts(g2^j)]);
+			od;
+		fi;
+		if x[1]=-1 then
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-1),PositionElts(g1^i*g2^n)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*(-2),PositionElts(g2^j)]);
+			od;
+		fi;
+	fi;
+	return h;
+end;
+
+return Objectify(HapResolution,
+                rec(
+                dimension:=Dimensionss,
+                boundary:=Boundaryss,
+                homotopy:=Homotopyss,
+                elts:=Elts,
+                group:=FrAb,
+                properties:=
+                   [["length",Ns],
+                    ["reduced",true],
+                    ["type","resolution"],
+                    ["characteristic",0]  ]));
+
+end;
+
+
+#####################This part is of file ResolutionZ4#################
+
+##########This file is for building the resolution of Z over ZZ^4#########
+ResolutionZ4:=function(Nss)
+
+local 	G, g1, g2, g3, g4, posg1, posg2, posg3, posg4,
+	Elts, Dimensionss, Boundaryss,
+	Coeff, Homotopyss,
+	fn, posfn;
+
+G:=AbelianGroup([0,0,0,0]); 
+#RG:=ResolutionAbelianGroup([0,0,0,0],2);
+#G:=RG!.group;
+g1:=G.1; g2:=G.2; g3:=G.3; g4:=G.4;
+#Elts:=[One(G),f1,f2,f3,f4];
+#Elts:=RG!.elts;
+
+####################Coeff function for element in G#######################
+Coeff:=function(x)
+	local C, CL, i;
+	C:=ExtRepOfObj(x);
+	CL:=[0,0,0,0];
+	i:=1;
+	while i < Length(C) do
+		CL[C[i]]:=CL[C[i]]+C[i+1];
+		i:=i+2;
+	od;
+	return CL;
+end;
+
+########################################Defining Elts#####################
+fn:=function(k)
+	local f, C; # C store Coefficients
+	f:=function(n)
+		local N, m,p,x,y;
+		if n<0 then
+			if (RootInt(-n))^2 = -n then
+				N:= RootInt(-n);
+			else 
+				N:= RootInt(-n) +1;
+			fi;
+		m:=AbsInt(n)-(N-1)^2;
+		y:=-N+1+m-1;
+		x:=AbsInt(y)-N;
+		fi;
+
+		if n>=0 then
+			p:=RootInt(n+1);
+			if p^2=(n+1) then
+				N:=p-1;
+			else N:= p;
+			fi;
+			m:=n-(N-1)*(N+1);
+			y:=-N+m-1;
+			x:=N-AbsInt(y);
+		fi;
+	return [x,y];
+	end;
+	C:=Concatenation(f(f(k)[1]), f(f(k)[2]));
+	return g1^C[1]*g2^C[2]*g3^C[3]*g4^C[4];
+end;
+Elts:=LazyList(fn);
+
+posfn:=function(L)
+	local g, CL;
+	CL:=Coeff(L);
+	g:=function(x,y)
+		local m, n, N;
+		N:=AbsInt(x) + AbsInt(y);
+		if x>=0 then
+			m:=y+1+N;
+			n:=m+(N-1)*(N+1);
+		fi;
+		if x<0 then
+			m:=y+N;
+			n:=-(m+(N-1)^2);
+		fi;
+		return n;
+	end;
+	return g(g(CL[1],CL[2]),g(CL[3],CL[4]));
+end;
+Elts!.posfun:=posfn;
+
+############ Definition of dimension function#############################
+Dimensionss:=function(n)
+	if n=0 then return 1; fi;
+	if n = 1 then return 4; fi;
+	if n = 2 then return 6; fi;
+	if n = 3 then return 4; fi;
+	if n = 4 then return 1; fi;
+	if n<0 or n>4 then return 0; fi;
+end;
+
+########### Definition of boundary function################################
+posg1:=Elts!.posfun(g1); posg2:=Elts!.posfun(g2); posg3:=Elts!.posfun(g3); posg4:=Elts!.posfun(g4); 
+
+Boundaryss:=function(n,k)
+	if n = 1 and k=1 then return [[1,posg1],[-1,0]]; fi;
+	if n = 1 and k=-1 then return [[-1,posg1],[1,0]]; fi;
+	if n = 1 and k =2 then return [[1,posg2], [-1,0]];fi;
+	if n = 1 and k =-2 then return [[-1,posg2], [1,0]];fi;
+	if n = 1 and k =3 then return [[1,posg3], [-1,0]];fi;
+	if n = 1 and k =-3 then return [[-1,posg3], [1,0]];fi;
+	if n =1 and k =4 then return [[1,posg4], [-1,0]];fi;
+	if n =1 and k =-4 then return [[-1,posg4], [1,0]];fi;
+
+	if n =2 and k =1 then return [[2,posg1], [-2,0], [1,0], [-1,posg2]];fi;
+	if n =2 and k =-1 then return [[-2,posg1], [2,0], [-1,0], [1,posg2]];fi;
+	if n =2 and k =2 then return [[3,posg1], [-3,0], [1,0], [-1,posg3]];fi;
+	if n =2 and k =-2 then return [[-3,posg1], [3,0], [-1,0], [1,posg3]];fi;
+	if n =2 and k = 3 then return [[4,posg1], [-4,0], [1,0], [-1,posg4]];fi;
+	if n =2 and k = -3 then return [[-4,posg1], [4,0], [-1,0], [1,posg4]];fi;
+	if n =2 and k = 4 then return [[3,posg2], [-3,0], [2,0], [-2,posg3]];fi;
+	if n =2 and k = -4 then return [[-3,posg2], [3,0], [-2,0], [2,posg3]];fi;
+	if n =2 and k =5 then return [[4,posg2], [-4,0], [2,0], [-2,posg4]];fi;
+	if n =2 and k =-5 then return [[-4,posg2], [4,0], [-2,0], [2,posg4]];fi;
+	if n =2 and k =6 then return [[4,posg3], [-4,0], [3,0], [-3,posg4]];fi;
+	if n =2 and k = -6 then return [[-4,posg3], [4,0], [-3,0], [3,posg4]];fi;
+
+	if n =3 and k =1 then return [[4,posg1], [-4,0], [2,0], [-2,posg2], [1,posg3], [-1,0]];fi;
+	if n =3 and k =2 then return [[5,posg1], [-5,0], [3,0], [-3,posg2], [1,posg4], [-1,0]];fi;
+	if n =3 and k =3 then return [[6,posg1], [-6,0], [3,0], [-3,posg3], [2,posg4], [-2,0]];fi;
+	if n =3 and k =4 then return [[6,posg2], [-6,0], [5,0], [-5,posg3], [4,posg4], [-4,0]];fi;
+	if n =3 and k =-1 then return [[-4,posg1], [4,0], [-2,0], [2,posg2], [-1,posg3], [1,0]];fi;
+	if n =3 and k =-2 then return [[-5,posg1], [5,0], [-3,0], [3,posg2], [-1,posg4], [1,0]];fi;
+	if n =3 and k =-3 then return [[-6,posg1], [6,0], [-3,0], [3,posg3], [-2,posg4], [2,0]];fi;
+	if n =3 and k =-4 then return [[-6,posg2], [6,0], [-5,0], [5,posg3], [-4,posg4], [4,0]];fi;
+
+	if n = 4 and k =1 then return [[4,posg1], [-4,0], [3,0], [-3,posg2], [2,posg3], [-2,0], [1,0], [-1,posg4]];fi;
+	if n = 4 and k =-1 then return [[-4,posg1], [4,0], [-3,0], [3,posg2], [-2,posg3], [2,0], [-1,0], [1,posg4]];fi;
+
+	if n<= 0 or n>4 then return []; fi;
+
+end;
+
+########## Definition of homotopy function #################################
+Homotopyss:=function(s,x)       ### x=[i,g] means Elts[g]*e^k_i; dimension s #####
+	local L, a, g, m, n, p, q, m1, n1, p1, q1, h, i, j, k, l, PositionElts;
+	PositionElts:=Elts!.posfun;
+	a:=Elts[x[2]];
+	L:=Coeff(a);
+	m:=L[1]; n:=L[2]; p:=L[3]; q:=L[4];
+	m1:=(m-AbsInt(m))/2; n1:=(n-AbsInt(n))/2; p1:=(p-AbsInt(p))/2; q1:=(q-AbsInt(q))/2;
+	h:=[];
+	if s=3 then 
+		if x[1] in [1,2,3,-1,-2,-3] then h:= []; fi;
+		if x[1]=4 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*1,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=-4 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-1),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+	fi;
+
+	if s=2 then
+		if x[1] in [1,2,3,-1,-2,-3] then h:=[]; fi;
+		if x[1]=4 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*1,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=-4 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-1),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=5 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*2,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=-5 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-2),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=6 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*3,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*4,PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=-6 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-3),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*(-4),PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+		fi;
+	fi;
+
+	if s = 1 then
+		if x[1] in [1,-1] then h:=[]; fi;
+		if x[1]=2 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*1,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=-2 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-1),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=3 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*2,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*4,PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=-3 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-2),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*(-4),PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+		fi;
+		if x[1]=4 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*3,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*5,PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+			for k in [p1..(p-1-p1)] do
+				Add(h,[SignInt(p)*6,PositionElts(g3^k*g4^q)]);
+			od;
+		fi;
+		if x[1]=-4 then 
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-3),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*(-5),PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+			for k in [p1..(p-1-p1)] do
+				Add(h,[SignInt(p)*(-6),PositionElts(g3^k*g4^q)]);
+			od;
+		fi;
+	fi;
+
+	if s = 0 then 
+		if x[1]=1 then
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*1,PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*2,PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+			for k in [p1..(p-1-p1)] do
+				Add(h,[SignInt(p)*3,PositionElts(g3^k*g4^q)]);
+			od;
+			for l in [q1..(q-1-q1)] do
+				Add(h,[SignInt(q)*4,PositionElts(g4^l)]);
+			od;
+		fi;
+		if x[1]=-1 then
+			for i in [m1..(m-1-m1)] do
+				Add(h,[SignInt(m)*(-1),PositionElts(g1^i*g2^n*g3^p*g4^q)]);
+			od;
+			for j in [n1..(n-1-n1)] do
+				Add(h,[SignInt(n)*(-2),PositionElts(g2^j*g3^p*g4^q)]);
+			od;
+			for k in [p1..(p-1-p1)] do
+				Add(h,[SignInt(p)*(-3),PositionElts(g3^k*g4^q)]);
+			od;
+			for l in [q1..(q-1-q1)] do
+				Add(h,[SignInt(q)*(-4),PositionElts(g4^l)]);
+			od;
+		fi;
+	fi;
+	return h;
+end;
+
+return Objectify(HapResolution,
+                rec(
+                dimension:=Dimensionss,
+                boundary:=Boundaryss,
+                homotopy:=Homotopyss,
+                elts:=Elts,
+                group:=G,
+                properties:=
+                   [["length",Nss],
+                    ["reduced",true],
+                    ["type","resolution"],
+                    ["characteristic",0]  ]));
+
+end;
+
+
+
+#############This part is of file SemRespow_test_07###################
+######################### Construct the semidirect product################
+#RH:=ResolutionAbelianGroup_alt([0,0],3);
+RH:=ResolutionZ2(length);
+H:=RH!.group;
+ElementsFamily(FamilyObj(FreeGroupOfFpGroup(H)))!.names:=["u","v"];
+
+RG:=ResolutionZ4(length);
+G:=RG!.group;
+
+x:=GroupHomomorphismByImages(G,G,[G.1,G.2,G.3,G.4],[G.4,G.1,G.2,G.3]);
+y:=GroupHomomorphismByImages(G,G,[G.1,G.2,G.3,G.4],[G.2,G.1,G.3,G.4]);
+z:=GroupHomomorphismByImages(G,G,[G.1,G.2,G.3,G.4],[G.1^-1,G.2,G.3,G.4]);
+w:=GroupHomomorphismByImages(G,G,[G.1,G.2,G.3,G.4],[G.1,G.1*G.2,G.3,G.4]);
+au:=Group([x,y,z,w]);
+SetIsAutomorphismGroup(au,true);
+
+############ Function generating coefficients of homology f
+Cof:=function(a) ####### a must be list with 6 elements
+	local i, L, m, n, p, q;
+	L:=a;
+	for i in [1..power1] do
+	m:=-L[1]+2*L[3]; n:=-L[2]+2*L[4];
+	p:=L[1]-L[3]; q:=L[2]-L[4];
+	L:=[m,n,p,q];
+	od;
+	return L;
+end;
+Cof1:=Cof([1,0,0,0]); Cof2:=Cof([0,1,0,0]); Cof3:=Cof([0,0,1,0]); Cof4:=Cof([0,0,0,1]);
+
+Cog:=function(a) ####### a must be list with 6 elements
+	local i, L, m, n, p, q;
+	L:=a;
+	for i in [1..power2] do
+	m:=L[1]+2*L[4]; n:=L[1]+L[2];
+	p:=L[2]+L[3]; q:=L[3]+L[4];
+	L:=[m,n,p,q];
+	od;
+	return L;
+end;
+Cog1:=Cog([1,0,0,0]); Cog2:=Cog([0,1,0,0]); Cog3:=Cog([0,0,1,0]); Cog4:=Cog([0,0,0,1]);
+
+f:=GroupHomomorphismByImages(G,G,[G.1,G.2,G.3,G.4],[G.1^Cof1[1]*G.2^Cof1[2]*G.3^Cof1[3]*G.4^Cof1[4],G.1^Cof2[1]*G.2^Cof2[2]*G.3^Cof2[3]*G.4^Cof2[4],G.1^Cof3[1]*G.2^Cof3[2]*G.3^Cof3[3]*G.4^Cof3[4],G.1^Cof4[1]*G.2^Cof4[2]*G.3^Cof4[3]*G.4^Cof4[4]]);
+g:=GroupHomomorphismByImages(G,G,[G.1,G.2,G.3,G.4],[G.1^Cog1[1]*G.2^Cog1[2]*G.3^Cog1[3]*G.4^Cog1[4],G.1^Cog2[1]*G.2^Cog2[2]*G.3^Cog2[3]*G.4^Cog2[4],G.1^Cog3[1]*G.2^Cog3[2]*G.3^Cog3[3]*G.4^Cog3[4],G.1^Cog4[1]*G.2^Cog4[2]*G.3^Cog4[3]*G.4^Cog4[4]]);
+
+InstallMethod(\in, "for AutomorphismGroupOfZ4",[IsMapping, IsAutomorphismGroup],function(k,K)
+if (IsInjective(k)=true and IsSurjective(k)=true) then
+return true;
+else return false;
+fi;
+end);
+
+hom:=GroupHomomorphismByImagesNC(H,au,[H.1,H.2],[f,g]);
+semi:=SemidirectProduct(H,hom,G);
+AbelianInvariants(semi);
+
+#########################################################################
+
+
+##########################################################################
+## Define what is g1, g2, g3 in Nposition function########################
+g1:=PreImagesRepresentative(Embedding(semi,2),semi.3);
+g2:=PreImagesRepresentative(Embedding(semi,2),semi.4);
+g3:=PreImagesRepresentative(Embedding(semi,2),semi.5);
+g4:=PreImagesRepresentative(Embedding(semi,2),semi.6);
+
+######################### Function for explicit element of the semidirectprodcuct
+Excoeffs:=function(v) ########## v is an element of semidirect product######
+local i, L, Coeffs, Smulti, vs;
+
+	Coeffs:=function(v)
+		local Effs, L, i, j, pas;
+		Effs:= ExtRepOfObj(v);
+		L:=[];	
+		for i in [0..Length(Effs)/2-1] do
+			pas:=[0,0,0,0,0,0];
+			j:=Effs[2*i+1];
+			if j=1 or j=2 then 
+				pas[j]:=-Effs[2*i+2];
+			else 	pas[j]:=Effs[2*i+2];
+			fi;
+			Add(L,pas);
+		od;
+		return L;
+	end;
+
+############### Product function which multiplies [a,b,c,d,e,f] and [a,b,c,d,e,f,g,h]#############
+	Smulti:=function(a,b) ########### a, b must be a list with 6 elements
+		local A, B, C, i, L, m, n, p, q, mat;
+		A:=a;
+		L:=[[b[3]],[b[4]],[b[5]],[b[6]]];
+		
+			mat:=[[1,0,0,2],[1,1,0,0],[0,1,1,0],[0,0,1,1]];
+			mat:=mat^(power2*A[2]);	
+			L:=mat*L;
+				
+			mat:=[[-1,0,2,0],[0,-1,0,2],[1,0,-1,0],[0,1,0,-1]];
+			mat:=mat^(power1*A[1]);
+			L:=mat*L;
+		
+		B:=[b[1],b[2],L[1,1],L[2,1],L[3,1],L[4,1]];
+		C:=[A[1]+B[1],A[2]+B[2],A[3]+B[3],A[4]+B[4],A[5]+B[5],A[6]+B[6]];
+		return C;
+	end;
+
+###########################################################################
+
+
+########### The main of the function for explicit element of the semidirect product
+
+vs:=Coeffs(v);
+L:=[0,0,0,0,0,0];
+for i in [1..Length(vs)] do
+	L:=Smulti(L,vs[i]);
+od;
+return L;
+end;
+
+
+############ Function semidirectposition###################################
+Semposition:=function(A,a)
+	local k, L, B, b, m, pos, j;
+	B:=A;
+	L:=[];
+	for k in [1..Length(B)] do
+		Add(L, Excoeffs(B[k]));
+	od;
+	b:=Excoeffs(a);
+	pos:=fail;
+	for j in [1..Length(L)] do
+		if b=L[j] then pos:=j; fi;
+	od;
+	return pos;
+end;
+############################################################################
+
+############## Function semisort############################################
+Semisort:=function(A)   ############ A: a list of elements of semi##########
+	local i,j,a,L,Ls,Lss;
+	a:=A;
+	L:=[];
+	for i in [1..Length(a)] do
+		Add(L,Excoeffs(a[i]));
+	od;
+	Ls:=SSortedList(L);
+	Lss:=List([1..Length(Ls)],i->0);
+	for i in [1..Length(a)] do
+		for j in [1..Length(Ls)] do
+			if L[i]=Ls[j] then Lss[j]:=a[i]; fi;
+		od;
+	od;
+	return Lss;
+end;
+############################################################################
+
+
+
+######################## Modify TwistedTensorProduct for semi
+STwistedTensorProduct:=function ( R, S, EhomG, GmapE, NhomE, NEhomN, EltsE, Mult, InvE )
+    local DimensionR, BoundaryR, HomotopyR, DimensionS, BoundaryS, HomotopyS, Dimension,
+    Boundary, Homotopy, FilteredLength, FilteredDimension, DimPQ, DimPQrec, Int2Pair,
+    Pair2Int, Htpy, HtpyRecord, CompHtpy, Del, CompDel, DelRecord, srtfn, PseudoBoundary,
+    Charact, AddWrds, AddLst, i, j, k, l, n, p, q, r, rr, grp, dl, Int2Vector, Vector2Int,
+    HorizontalBoundaryGen, HorizontalBoundaryWord, HomotopyGradedGen, EmapN, HomotopyRec,
+    Homtpy, HomotopyOfWord, FinalHomotopy, HorizontalPseudoBoundary, SMALL, SizeE, BoolE,
+    MT, AbsInt, SignInt, CfList;
+    AbsInt := AbsInt_HAP;
+    SignInt := SignInt_HAP;
+    SMALL := 4096;
+    SizeE:=infinity;
+    BoolE := false;
+    DimensionR := R!.dimension;
+    DimensionS := S!.dimension;
+    BoundaryR := R!.boundary;
+    BoundaryS := S!.boundary;
+    HomotopyR := R!.homotopy;
+    HomotopyS := S!.homotopy;
+    n := Minimum( EvaluateProperty( R, "length" ), EvaluateProperty( S, "length" ) );
+
+############### Finding characteristic of the Resolution
+    if
+     EvaluateProperty( R, "characteristic" ) = 0
+        and EvaluateProperty( S, "characteristic" ) = 0 then
+        Charact := EvaluateProperty( R, "characteristic" );
+    fi;
+    if
+     EvaluateProperty( R, "characteristic" ) = 0
+        and EvaluateProperty( S, "characteristic" ) > 0 then
+        Charact := EvaluateProperty( S, "characteristic" );
+    fi;
+    if
+     EvaluateProperty( R, "characteristic" ) > 0
+        and EvaluateProperty( S, "characteristic" ) = 0 then
+        Charact := EvaluateProperty( R, "characteristic" );
+    fi;
+    if
+     EvaluateProperty( R, "characteristic" ) > 0
+        and EvaluateProperty( S, "characteristic" ) > 0 then
+        Charact
+         :=
+          Product(
+           Intersection( [ DivisorsInt( EvaluateProperty( R, "characteristic" ) ),
+                DivisorsInt( EvaluateProperty( S, "characteristic" ) ) ] ) );
+    fi;
+#################### Function defining the method for each characteristic
+    if Charact = 0 then
+        AddWrds := AddFreeWords;
+    else
+        AddWrds := function ( v, w )
+              ;
+              return AddFreeWordsModP( v, w, Charact );
+          end;
+    fi;
+####################
+    AddLst := function ( v, SM )
+          local x, ab;
+          for x in v do
+              if not IsBound( SM[x[2]] ) then
+                  SM[x[2]] := [  ];
+              fi;
+              ab := AbsInt( x[1] );
+              if not IsBound( SM[x[2]][ab] ) then
+                  SM[x[2]][ab] := [ ab, x[2] ];
+              else
+                  Unbind( SM[x[2]][ab] );
+              fi;
+          od;
+          return;
+      end;
+##################
+    Dimension := function ( i ) 
+# Dimensionss := function ( i )  ######just for test
+          local D, j;
+          if i = 0 then
+              return 1;
+          fi;
+          D := 0;
+          for j in [ 0 .. i ] do
+              D := D + DimensionR( j ) * DimensionS( (i - j) );
+          od;
+          return D;
+      end;
+#################
+    DimPQrec := List( [ 1 .. n + 1 ], function ( i )
+            return [  ];
+        end );
+################
+    DimPQ := function ( p, q )
+          local D, j;
+          if p < 0 or q < 0 then
+              return 0;
+          fi;
+          if not IsBound( DimPQrec[p + 1][q + 1] ) then
+              D := 0;
+              for j in [ 0 .. q ] do
+                  D := D + DimensionR( (p + q - j) ) * DimensionS( j );
+              od;
+              DimPQrec[p + 1][q + 1] := D;
+          fi;
+          return DimPQrec[p + 1][q + 1];
+      end;
+###############
+    Int2Pair := function ( i, p, q )
+          local s, r, x;
+          x := AbsInt( i ) - DimPQ( (p + 1), (q - 1) );
+          s := x mod DimensionS( q );
+          r := (x - s) / DimensionS( q );
+          if s = 0 then
+              return [ SignInt( i ) * r, DimensionS( q ) ];
+          else
+              return [ SignInt( i ) * (r + 1), s ];
+          fi;
+          return;
+      end;
+##############
+    Pair2Int := function ( x, p, q )
+          local y;
+          y := [ AbsInt( x[1] ), AbsInt( x[2] ) ];
+          return SignInt( x[1] ) * SignInt( x[2] ) * ((y[1] - 1) * DimensionS( q ) + y[2]
+              + DimPQ( (p + 1), (q - 1) ));
+      end;
+#############
+	HtpyRecord_index:=[];
+    HtpyRecord := [  ];
+    #for p in [ 0 .. n ] do
+        #HtpyRecord[p + 1] := [  ];
+        #for q in [ 0 .. n - p ] do
+            #HtpyRecord[p + 1][q + 1] := [  ];
+            #for j in [ 1 .. DimPQ( p, q ) ] do
+                #HtpyRecord[p + 1][q + 1][j] := [  ];
+            #od;
+        #od;
+    #od;
+
+#############
+    if not BoolE then
+
+        Htpy := function ( p, q, x )
+
+              local tensor, t, g, r, s, AB, m;
+              AB := AbsInt( x[1] );
+              #if not IsBound( HtpyRecord[p + 1][q + 1][AB][x[2]] ) then
+		m:=Position(HtpyRecord_index,[p+1,q+1,AB,x[2]]);
+		if m=fail then
+			Add(HtpyRecord_index,[p+1,q+1,AB,x[2]]);
+			m:=Length(HtpyRecord_index);
+                  tensor := Int2Pair( AB, p, q );
+                  g := NEhomN( Mult( InvE( GmapE( EhomG( x[2] ) ) ), x[2] ) );
+                  t := GmapE( EhomG( x[2] ) );
+                  r := ShallowCopy( HomotopyS( q, [ tensor[2], g ] ) ); ########### Error here
+Print("r=",r,"\n");
+                  Apply( r, function ( y )
+                        return [ y[1], NhomE( y[2] ) ];
+                    end );
+Print("r=",r,"\n");
+                  Apply( r, function ( y )
+                        return [ Pair2Int( [ tensor[1], y[1] ], p, q + 1 ), Mult( t, y[2] )
+                           ];
+                    end );
+Print("r=",r,"\n");
+                  Add(HtpyRecord,r);
+              fi;
+              if SignInt( x[1] ) > 0 then
+                  return HtpyRecord[m];
+              else
+                  return NegateWord( HtpyRecord[m] );
+              fi;
+              return;
+          end;
+    else
+        Htpy := function ( p, q, x )
+              local tensor, t, g, r, s, AB;
+              AB := AbsInt( x[1] );
+              #if not IsBound( HtpyRecord[p + 1][q + 1][AB][x[2]] ) then
+		m:=Position(HtpyRecord_index,[p+1,q+1,AB,x[2]]);
+		if m=fail then
+			Add(HtpyRecord_index,[p+1,q+1,AB,x[2]]);
+			m:=Length(HtpyRecord_index);
+                  tensor := Int2Pair( AB, p, q );
+                  g := NEhomN( MT[InvE( GmapE( EhomG( x[2] ) ) )][x[2]] );
+                  t := GmapE( EhomG( x[2] ) );
+                  r := ShallowCopy( HomotopyS( q, [ tensor[2], g ] ) );
+                  Apply( r, function ( y )
+                        return [ y[1], NhomE( y[2] ) ];
+                    end );
+                  Apply( r, function ( y )
+                        return [ Pair2Int( [ tensor[1], y[1] ], p, q + 1 ), MT[t][y[2]] ];
+                    end );
+                  Add(HtpyRecord,r);
+              fi;
+              if SignInt( x[1] ) > 0 then
+                  return HtpyRecord[m];
+              else
+                  return NegateWord(HtpyRecord[m]);
+              fi;
+              return;
+          end;
+    fi;
+###################
+    if not Charact = 2 then
+        CompHtpy := function ( p, q, b )
+              local w, r;
+              r := [  ];
+              for w in b do
+                  r := AddWrds( Htpy( p, q, w ), r );
+              od;
+              return r;
+          end;
+    else
+        CompHtpy := function ( p, q, b )
+              local w, x, r, SM, j;
+
+              SM := [  ];
+              for w in b do
+                  AddLst( Htpy( p, q, w ), SM );
+              od;
+              r := [  ];
+              for x in SM do
+                  for j in x do
+                      if not j = 0 then
+                          Add( r, j );
+                      fi;
+                  od;
+              od;
+              return r;
+          end;
+    fi;
+###################
+    Del := function ( k, p, q, x )
+          local b, i, r, v, w, tensor, Record, Ab, j, SM, y;
+          Ab := AbsInt( x );
+          if not DelRecord[k + 1][p + 1][q + 1][Ab] = 0 then
+              if SignInt( x ) = 1 then
+                  return DelRecord[k + 1][p + 1][q + 1][Ab];
+              else
+                  return NegateWord( DelRecord[k + 1][p + 1][q + 1][Ab] );
+              fi;
+          fi;
+          Record := function (  )
+                ;
+                if SignInt( x ) = 1 then
+                    DelRecord[k + 1][p + 1][q + 1][Ab] := v;
+                else
+                    DelRecord[k + 1][p + 1][q + 1][Ab] := NegateWord( v );
+                fi;
+                return;
+            end;
+          tensor := Int2Pair( x, p, q );
+Print("tensor = ",tensor,"\n");
+          if k = 0 then
+Print("k=",k,"\n");
+              b := BoundaryS( q, tensor[2] );
+Print("BoundaryS( q, tensor[2] ) = ",b,"\n");
+              v := List( b, function ( v )
+                      return [ Pair2Int( [ tensor[1], v[1] ], p, q - 1 ), NhomE( v[2] ) ];
+                  end );
+Print("v=",v,"\n");
+              Record(  );
+              return v;
+          fi;
+          if k = 1 then
+Print("Inside Del ",[k,p,q,x],"\n");
+Print("k=",k,"\n");
+              if q = 0 then
+                  if p > 0 then
+                      b := ShallowCopy( BoundaryR( p, - tensor[1] ) );
+                      v := List( b, function ( v )
+                              return
+                               [ Pair2Int( [ v[1], tensor[2] ], p - 1, q ), GmapE( v[2] ) ];
+                          end );
+Print("v=",v,"\n");
+                      Record(  );
+                      return v;
+                  else
+                      return [  ];
+                  fi;
+              else
+                  if p > 0 then
+                      v := CompHtpy( p - 1, q - 1, CompDel( 1, p, q - 1, Del( 0, p, q, - x )) ); ###error here
+Print("v=",v,"\n");
+                      Record(  ); ########### Error in the upper line
+                      return v;
+                  else
+                      return [  ];
+                  fi;
+              fi;
+          fi;
+          if k > 1 then
+Print("k=",k,"\n");
+              if p > k - 1 then
+                  r := [  ];
+                  for i in [ 1 .. k ] do
+                      r
+                       :=
+                        AddWrds( CompDel( i, p - k + i, q + k - i - 1,
+                           Del( k - i, p, q, - x ) ), r );
+                  od;
+                  v := CompHtpy( p - k, q + k - 2, r );
+Print("v=",v,"\n");
+                  Record(  );
+                  return v;
+              else
+                  return [  ];
+              fi;
+          fi;
+          return;
+      end;
+#####################
+    if not BoolE then
+        CompDel := function ( k, p, q, b )
+              local r, v, w, x, map, SM, j, y;
+              map := function ( x )
+                    ;
+                    return Del( k, p, q, x );
+                end;
+              if not Charact = 2 then
+                  r := [  ];
+                  for v in b do
+
+                      w := ShallowCopy( map( v[1] ) );
+                      Apply( w, function ( y )
+                            return [ y[1], Mult( v[2], y[2] ) ];
+                        end );
+                      r := AddWrds( w, r );
+                  od;
+              else
+                  SM := [  ];
+                  for v in b do
+                      w := ShallowCopy( map( v[1] ) );
+                      Apply( w, function ( y )
+                            return [ y[1], Mult( v[2], y[2] ) ];
+                        end );
+                      AddLst( w, SM );
+                  od;
+                  r := [  ];
+                  for y in SM do
+                      for j in y do
+                          Add( r, j );
+                      od;
+                  od;
+              fi;
+              return r;
+          end;
+    else
+        CompDel := function ( k, p, q, b )
+              local r, v, w, x, map, SM, j, y;
+              map := function ( x )
+                    ;
+                    return Del( k, p, q, x );
+                end;
+              if not Charact = 2 then
+                  r := [  ];
+                  for v in b do
+                      w := ShallowCopy( map( v[1] ) );
+
+                      Apply( w, function ( y )
+                            return [ y[1], MT[v[2]][y[2]] ];
+                        end );
+                      r := AddWrds( w, r );
+                  od;
+              else
+                  SM := [  ];
+                  for v in b do
+                      w := ShallowCopy( map( v[1] ) );
+                      Apply( w, function ( y )
+                            return [ y[1], MT[v[2]][y[2]] ];
+                        end );
+                      AddLst( w, SM );
+                  od;
+                  r := [  ];
+                  for y in SM do
+                      for j in y do
+                          Add( r, j );
+                      od;
+                  od;
+              fi;
+              return r;
+          end;
+    fi;
+###################
+    DelRecord := [  ];
+    for l in [ 0 .. n ] do
+        DelRecord[l + 1] := [  ];
+        for p in [ 0 .. n ] do
+            DelRecord[l + 1][p + 1] := [  ];
+            for q in [ 0 .. n - p ] do
+                DelRecord[l + 1][p + 1][q + 1] := [  ];
+                for j in [ DimPQ( p + 1, q - 1 ) + 1 .. DimPQ( p, q ) ] do
+                    DelRecord[l + 1][p + 1][q + 1][j] := 0;
+                od;
+            od;
+        od;
+    od;
+####################
+    PseudoBoundary := [  ];
+    HorizontalPseudoBoundary := [  ];
+
+    for k in [ 1 .. n ] do
+        PseudoBoundary[k] := [  ];
+        HorizontalPseudoBoundary[k] := [  ];
+        for q in [ 0 .. k ] do
+            p := k - q;
+	    for j in [ DimPQ( p + 1, q - 1 ) + 1 .. DimPQ( p, q ) ] do
+                r := [  ];
+                rr := [  ];
+                for l in [ 0 .. p ] do
+Print([l,p,q,j],"\n");
+Print(Length(EltsE),"\n");
+                    dl := Del( l, p, q, j ); ####### The error here
+Print("del = ",dl,"\n");
+                    r := AddWrds( dl, r );
+                    if l > 0 then
+                        rr := AddWrds( dl, rr );
+                    fi;
+                od;
+                Add( PseudoBoundary[k], [ r, p ] );
+                Add( HorizontalPseudoBoundary[k], rr );
+            od;
+        od;
+    od;
+###################
+    Boundary := function ( k, j )
+          ;
+          if k = 0 then
+              return [  ];
+          else
+              if SignInt( j ) = 1 then
+                  return PseudoBoundary[k][j][1];
+              else
+                  return NegateWord( PseudoBoundary[k][- j][1] );
+              fi;
+          fi;
+          return;
+      end;
+##################
+    EmapN := function ( x )
+          ;
+          return NEhomN( Mult( InvE( GmapE( EhomG( x ) ) ), x ) );
+      end;
+##################
+    Int2Vector := function ( k, j )
+          local tmp, p, q;
+          p := k;
+          q := 0;
+          while j >= DimPQ( p, q ) + 1 do
+              p := p - 1;
+              q := q + 1;
+          od;
+          tmp := Int2Pair( j, p, q );
+          return [ p, q, tmp[1], tmp[2] ];
+      end;
+##################
+    Vector2Int := function ( p, q, r, s )
+          ;
+          return Pair2Int( [ r, s ], p, q );
+      end;
+##################
+    HorizontalBoundaryGen := function ( k, y )
+          local horizontal;
+          if k = 0 then
+              return [  ];
+          else
+              if SignInt( y[1] ) = 1 then
+                  horizontal := ShallowCopy( HorizontalPseudoBoundary[k][y[1]] );
+              else
+                  horizontal
+                   := NegateWord( ShallowCopy( HorizontalPseudoBoundary[k][- y[1]] ) );
+              fi;
+          fi;
+          Apply( horizontal, function ( x )
+                return [ x[1], Mult( y[2], x[2] ) ];
+            end );
+          return horizontal;
+      end;
+##################
+    HorizontalBoundaryWord := function ( n, w )
+          local x, bnd;
+          bnd := [  ];
+          for x in w do
+              Append( bnd, HorizontalBoundaryGen( n, x ) );
+          od;
+          return bnd;
+      end;
+#################
+    HomotopyGradedGen := function ( g, p, q, r, s, bool )
+          local aa, hty, hty1, Eg1, Eg2, g1, g2;
+          g1 := EhomG( g );
+          g2 := EmapN( g );
+          Eg1 := GmapE( g1 );
+          Eg2 := NhomE( g2 );
+          hty := HomotopyS( q, [ s, g2 ] );
+          Apply( hty, function ( x )
+                return [ Vector2Int( p, q + 1, r, x[1] ), NhomE( x[2] ) ];
+            end );
+          Apply( hty, function ( x )
+                return [ x[1], Mult( Eg1, x[2] ) ];
+            end );
+          if p = 0 and q > 0 or bool then
+              return hty;
+          fi;
+          if p > 0 then
+              hty1
+               := HomotopyOfWord( p + q,
+                 ShallowCopy( HorizontalBoundaryWord( p + q + 1, hty ) ), false );
+              Append( hty, NegateWord( hty1 ) );
+          fi;
+          if q > 0 then
+              return hty;
+          fi;
+          hty1 := HomotopyR( p, [ r, g1 ] );
+          Apply( hty1, function ( x )
+                return [ Vector2Int( p + 1, q, x[1], s ), GmapE( x[2] ) ];
+            end );
+          hty1 := NegateWord( hty1 );
+          Append( hty, hty1 );
+          hty1
+           := HomotopyOfWord( p + q, ShallowCopy( HorizontalBoundaryWord( p + q + 1, hty1 )
+               ), true );
+          Append( hty, NegateWord( hty1 ) );
+          return hty;
+      end;
+########################
+    Homtpy := function ( n, x, bool )
+          local vec, a;
+          a := AbsInt( x[1] );
+          vec := Int2Vector( n, a );
+          if SignInt( x[1] ) = 1 then
+              return HomotopyGradedGen( x[2], vec[1], vec[2], vec[3], vec[4], bool );
+          else
+              return NegateWord( HomotopyGradedGen( x[2], vec[1], vec[2], vec[3], vec[4],
+                   bool ) );
+          fi;
+          return;
+      end;
+#######################
+    HomotopyOfWord := function ( n, w, bool )
+          local x, hty;
+          hty := [  ];
+          for x in w do
+              Append( hty, Homtpy( n, x, bool ) );
+          od;
+          return hty;
+      end;
+######################
+    FinalHomotopy := function ( n, x )
+          ;
+          return Homtpy( n, x, false );
+      end;
+#####################
+    if HomotopyR = fail or HomotopyS = fail then
+        FinalHomotopy := fail;
+    fi;
+#####################
+    grp := E;
+    FilteredLength := Length( R );
+
+    FilteredDimension := function ( r, i )
+          ;
+          return Length( Filtered( List( PseudoBoundary[i], function ( x )
+                      return x[2];
+                  end ), function ( y )
+                    return y <= r;
+                end ) );
+      end;
+
+    return Objectify( HapResolution, rec(
+          dimension := Dimension,
+          filteredDimension := FilteredDimension,
+          boundary := Boundary,
+          homotopy := FinalHomotopy,
+          elts := EltsE,
+          group := grp,
+          vectorToInt := Vector2Int,
+          intToVector := Int2Vector,
+          pseudoBoundary := PseudoBoundary,
+          properties :=
+           [ [ "type", "resolution" ], [ "length", n ],
+              [ "filtration_length", FilteredLength ], [ "initial_inclusion", false ],
+              [ "characteristic", Charact ], [ "isTwistedTensorProduct", true ] ] ) );
+end;
+##############################################################################
+
+
+
+#####################Function finding Resolution of group semi
+
+SemResolution:= function(EEhomGG,RN,RG)
+local
+	PreImRep,
+	N,E,G,
+	NhomE,
+	EhomG,
+	GmapE,
+	NEhomN,
+	NEhomNrecord,
+	EltsE,
+	MultE,
+	InvE,
+	PreimagesRecordG,PreimagesRecordE,
+	Lngth,T,
+	AppendToElts,
+	gn,i,j,
+	fpG,fpGhomG,fpN, fpNhomN,
+	fn, EltsN, Nposition, CfList;
+
+T:=0;
+
+############################################################
+################ Function semidirectposition
+Nposition:=function(a)
+local b,p, pos, spos;
+b:=Excoeffs(a){[3..6]};
+return Position(EltsN,g1^b[1]*g2^b[2]*g3^b[3]*g4^b[4]);
+end;
+
+##########################################
+#############################################################
+PreImRep:=function(x);
+return PreImagesRepresentative(EEhomGG,x);
+end;
+#############################################################
+
+
+E:=Source(EEhomGG);
+#Es:=Source(EEhomGG);  ######for testing
+EltsN:=StructuralCopy(RN!.elts);
+
+
+fn:=function(x)
+return Image(Embedding(E,2),EltsN[x]);
+#return Image(Embedding(Es,2),EltsN[x]); ##########for testing
+end;
+
+RN!.elts:=LazyList(fn);
+G:=Image(EEhomGG);
+
+########################## Elts for Resolution of semi ###################
+#g1:=E.1; g2:=E.2; g3:=E.3; g4:=E.4; g5:=E.5; g6:=E.6;
+h1:=E.1; h2:=E.2; h3:=E.3; h4:=E.4; h5:=E.5; h6:=E.6;
+#h1:=Es.1; h2:=Es.2; h3:=Es.3; h4:=Es.4; h5:=Es.5; h6:=Es.6; ###for testing
+fn:=function(k)
+	local f, C, C1, C2;
+	f:=function(n)
+		local N, m,p,x,y;
+		if n<0 then
+			if (RootInt(-n))^2 = -n then
+				N:= RootInt(-n);
+			else 
+				N:= RootInt(-n) +1;
+			fi;
+		m:=AbsInt(n)-(N-1)^2;
+		y:=-N+1+m-1;
+		x:=AbsInt(y)-N;
+		fi;
+
+		if n>=0 then
+			p:=RootInt(n+1);
+			if p^2=(n+1) then
+				N:=p-1;
+			else N:= p;
+			fi;
+			m:=n-(N-1)*(N+1);
+			y:=-N+m-1;
+			x:=N-AbsInt(y);
+		fi;
+	return [x,y];
+	end;
+	C:=f(k);
+	C1:=f(C[1]);
+	C2:=Concatenation(f(f(C[2])[1]),f(f(C[2])[2]));
+	C:=Concatenation(C1,C2);
+	#return g1^C[1]*g2^C[2]*g3^C[3]*g4^C[4]*g5^C[5]*g6^C[6];
+	return h1^C[1]*h2^C[2]*h3^C[3]*h4^C[4]*h5^C[5]*h6^C[6];
+end;
+EltsE:=LazyList(fn);
+
+posfn:=function(L)
+	local g,H, H2, inversemat1, inversemat2; #### H store Excoeff L#############
+	H:=Excoeffs(L);
+	H2:=[H[3],H[4],H[5],H[6]];
+	inversemat1:=([[-1,0,2,0],[0,-1,0,2],[1,0,-1,0],[0,1,0,-1]])^-1;
+	inversemat2:=([[1,0,0,2],[1,1,0,0],[0,1,1,0],[0,0,1,1]])^-1;
+	H2:=inversemat2^(H[2]*power2)*inversemat1^(H[1]*power1)*H2;
+	H:=Concatenation([-H[1],-H[2]],H2);
+	g:=function(x,y)
+		local m, n, N;
+		N:=AbsInt(x) + AbsInt(y);
+		if x>=0 then
+			m:=y+1+N;
+			n:=m+(N-1)*(N+1);
+		fi;
+		if x<0 then
+			m:=y+N;
+			n:=-(m+(N-1)^2);
+		fi;
+		return n;
+	end;
+	return g(g(H[1],H[2]),g(g(H[3],H[4]),g(H[5],H[6])));
+end;
+EltsE!.posfun:=posfn;
+
+
+#EltsE:=[Identity(E)];
+#for gn in GeneratorsOfGroup(E) do
+#Append(EltsE,[gn,gn^-1]);
+#od;
+
+
+#CfList:=[];
+#for gn in [1..Length(EltsE)] do
+#Add(CfList,Excoeffs(EltsE[gn]));
+#od;
+
+
+#gn:=Position(CfList,[0,0,0,0,0,0]);
+#EltsE[gn]:=EltsE[1];
+#EltsE[1]:=Identity(E);
+
+#CfList[gn]:=CfList[1];
+#CfList[1]:=[0,0,0,0,0,0];
+
+
+########################################################
+	#AppendToElts:=function(x);
+	#Append(EltsE,[x]);
+	#end;
+########################################################
+
+####################### Function adding image of an element in EltsE to RG!.elts then return its length
+        EhomG:=function(x)
+	local g,Eltg;
+	Eltg:=ImageElm(EEhomGG,EltsE[x]); 
+        g:=Position(RG!.elts,Eltg);
+	if g=fail then 
+	RG!.appendToElts(Eltg); 
+	Append(RG!.elts,[Eltg]);
+	g:=Length(RG!.elts); fi;
+	return g;
+        end;
+#########################################
+
+
+#################### Function adding image of an element of RN!.elts to EltsE then return Length of EltsE
+        NhomE:=function(x)
+	#local e,Elte,c;
+	local e, Elte;
+#Print("x=",x,"\n");
+	Elte:=RN!.elts[x];
+#Print("Elte=",Elte,"\n");
+	#c:=Excoeffs(Elte);
+#Print("c=",c,"\n");
+        #e:=Position(CfList,c);
+#Print("e=",e,"\n");
+	#if e=fail then AppendToElts(Elte);
+	#Add(CfList,c);
+#Print("CfList=",CfList,"\n");
+	#e:=Length(EltsE); fi;
+	e:=Position(EltsE,Elte);
+	return e;
+       	end;
+
+################################ 
+
+#PreimagesRecordG:=[];
+#PreimagesRecordE:=[];
+	#################Function adding preimage of an element of RG!.elts
+	# to EltsE, return the length of EltsE, adding inverse of the elements
+	GmapE:=function(x)
+	local e,Elte,Eltg,pos,c;
+	Eltg:=RG!.elts[x];
+	#pos:=Position(PreimagesRecordG,Eltg); 
+	#if not pos=fail then 
+	#return PreimagesRecordE[pos]; fi;
+	
+	Elte:=PreImRep(Eltg); 
+	e:=Position(EltsE,Elte);
+	#c:=Excoeffs(Elte);
+	#e:=Position(CfList,c);
+	#if e=fail then AppendToElts(Elte);
+	#Add(CfList,c);
+        #e:=Length(EltsE); fi;
+	
+	#c:=Excoeffs(Elte^-1);
+	#if Position(CfList,c)=fail then
+        #AppendToElts(Elte^-1); 
+	#Add(CfList,c);fi;
+	#Append(PreimagesRecordG,[Eltg]);
+	#Append(PreimagesRecordE,[e]);
+        return e;
+	end;
+	#########################################
+
+
+
+	#########Function adding x^th element of EltsE to RN!.elts and
+	#########return the length of RN!.elts
+
+	NEhomN:=function(x)
+		return Nposition(EltsE[x]);
+	end;
+	#########################################
+
+
+
+	#########Function finding the position of product of EltsE[x]*EltsE[y]
+	MultE:=function(x,y)
+	local p,Eltp;
+	Eltp:=EltsE[x]*EltsE[y];
+	p:=Position(EltsE,Eltp);
+	#c:=Excoeffs(Eltp);
+	#p:= Position(CfList,c);
+	#if p=fail then AppendToElts(Eltp);
+	#p:=Length(EltsE); 
+	#Add(CfList,c);fi;
+	return p;
+	end;
+	#########################################
+
+
+
+	############Function adding inverse of an element in EltsE and
+	############ returning the length of EltsE
+	InvE:=function(x)
+	#local c,p;
+	local p;
+	p:=Position(EltsE,EltsE[x]^-1);
+	#c:=Excoeffs(EltsE[x]^-1);
+	#p:=Position(CfList,c);
+	#if p=fail then AppendToElts(EltsE[x]^-1); 
+	#p:=Length(EltsE);
+	#Add(CfList,c);fi;
+	return p;
+	end;
+	#########################################
+
+
+T:=STwistedTensorProduct(RG,RN,EhomG,GmapE,NhomE,NEhomN,EltsE,MultE,InvE);
+
+        ########################################################
+        AppendToElts:=function(x);
+        Append(T!.elts,[x]); 
+        end;
+        ########################################################
+
+
+T!.appendToElts:=AppendToElts;
+return T;
+end;
+#####################################################################
+
+g:=Projection(semi);;
+RE:=SemResolution(g,RG,RH);
+
+T:=TensorWithIntegers(RE);
+
+
+Print("Results for m = ",power1,", n = ",power2/positivepower,":\n");
+for n in [0..2] do
+    Print(n,"th homology ",Homology(T,n),"\n");
+od; 
+Print("Cohomology results for m = ",power1,", n = ",power2/positivepower,":\n");
+T := HomToIntegers(RE);
+for n in [0..2] do
+    Print(n,"th cohomology ",Cohomology(T,n),"\n");
+od;
+
